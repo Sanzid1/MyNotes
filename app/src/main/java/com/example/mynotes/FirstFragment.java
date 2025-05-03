@@ -32,7 +32,7 @@ public class FirstFragment extends Fragment {
         binding.buttonFirst.setOnClickListener(v -> {
             // Use action ID instead of fragment ID
             NavHostFragment.findNavController(FirstFragment.this)
-                    .navigate(R.id.action_NotesListFragment_to_LoginFragment);
+                    .navigate(R.id.action_FirstFragment_to_SecondFragment);
         });
     }
 
