@@ -30,9 +30,9 @@ public class FirstFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         binding.buttonFirst.setOnClickListener(v -> {
-            // Use findNavController without specific action ID for now
+            // Use action ID instead of fragment ID
             NavHostFragment.findNavController(FirstFragment.this)
-                    .navigate(R.id.SecondFragment);
+                    .navigate(R.id.action_FirstFragment_to_SecondFragment);
         });
     }
 
