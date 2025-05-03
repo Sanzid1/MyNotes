@@ -14,6 +14,7 @@ import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
 
 import com.example.mynotes.databinding.ActivityMainBinding;
+import com.google.firebase.FirebaseApp;
 
 import android.view.Menu;
 import android.view.MenuItem;
@@ -27,6 +28,9 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        // Initialize Firebase
+        FirebaseApp.initializeApp(this);
+        
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
@@ -39,9 +43,10 @@ public class MainActivity extends AppCompatActivity {
         binding.fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAnchorView(R.id.fab)
-                        .setAction("Action", null).show();
+                // Navigate to NoteEditorFragment with isNewNote=true
+                Bundle args = new Bundle();
+                args.putBoolean("isNewNote", true);
+                navController.navigate(R.id.NoteEditorFragment, args);
             }
         });
     }
