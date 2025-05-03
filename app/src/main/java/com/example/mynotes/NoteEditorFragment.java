@@ -19,7 +19,9 @@ import androidx.navigation.fragment.NavHostFragment;
 import com.example.mynotes.databinding.FragmentNoteEditorBinding;
 import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.HashMap;
@@ -154,9 +156,6 @@ public class NoteEditorFragment extends Fragment {
         }
     }
 
-    // Removed deprecated onCreateOptionsMenu and onOptionsItemSelected methods
-    // Replaced with MenuProvider in onViewCreated
-
     private void deleteNote() {
         if (noteId != null) {
             db.collection("notes").document(noteId).delete()
@@ -177,3 +176,4 @@ public class NoteEditorFragment extends Fragment {
         super.onDestroyView();
         binding = null;
     }
+}

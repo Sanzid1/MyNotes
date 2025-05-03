@@ -9,12 +9,11 @@ public class Note {
     private String userId;
     private Timestamp timestamp;
 
-    // Empty constructor needed for Firestore
+    // Required empty constructor for Firestore
     public Note() {
     }
 
-    public Note(String id, String title, String content, String userId, Timestamp timestamp) {
-        this.id = id;
+    public Note(String title, String content, String userId, Timestamp timestamp) {
         this.title = title;
         this.content = content;
         this.userId = userId;

@@ -29,10 +29,11 @@ public class FirstFragment extends Fragment {
     public void onViewCreated(@NonNull View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        binding.buttonFirst.setOnClickListener(v ->
-                NavHostFragment.findNavController(FirstFragment.this)
-                        .navigate(R.id.action_FirstFragment_to_SecondFragment)
-        );
+        binding.buttonFirst.setOnClickListener(v -> {
+            // Use findNavController without specific action ID for now
+            NavHostFragment.findNavController(FirstFragment.this)
+                    .navigate(R.id.SecondFragment);
+        });
     }
 
     @Override
