@@ -40,7 +40,30 @@ public class NotesListFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        setHasOptionsMenu(true);
+        // Setup menu provider (replacing deprecated setHasOptionsMenu)
+        requireActivity().addMenuProvider(new androidx.core.view.MenuProvider() {
+            @Override
+            public void onCreateMenu(@NonNull Menu menu, @NonNull MenuInflater menuInflater) {
+                menuInflater.inflate(R.menu.menu_main, menu);
+            }
+
+            @Override
+            public boolean onMenuItemSelected(@NonNull MenuItem menuItem) {
+                int id = menuItem.getItemId();
+
+                if (id == R.id.action_settings) {
+                    // Handle settings action
+                    return true;
+                } else if (id == R.id.action_logout) {
+                    // Sign out user
+                    mAuth.signOut();
+                    NavHostFragment.findNavController(NotesListFragment.this)
+                            .navigate(R.id.action_NotesListFragment_to_LoginFragment);
+                    return true;
+                }
+                return false;
+            }
+        }, getViewLifecycleOwner(), androidx.lifecycle.Lifecycle.State.RESUMED);
 
         // Initialize Firebase
         db = FirebaseFirestore.getInstance();
@@ -91,33 +114,13 @@ public class NotesListFragment extends Fragment {
                     adapter.notifyDataSetChanged();
                 })
                 .addOnFailureListener(e -> {
-                    Toast.makeText(requireContext(), "Error loading notes: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    String errorMessage = e.getMessage();
+                    Toast.makeText(requireContext(), "Error loading notes: " + (errorMessage != null ? errorMessage : ""), Toast.LENGTH_SHORT).show();
                 });
     }
 
-    @Override
-    public void onCreateOptionsMenu(@NonNull Menu menu, @NonNull MenuInflater inflater) {
-        inflater.inflate(R.menu.menu_main, menu);
-        super.onCreateOptionsMenu(menu, inflater);
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        int id = item.getItemId();
-
-        if (id == R.id.action_settings) {
-            // Handle settings action
-            return true;
-        } else if (id == R.id.action_logout) {
-            // Sign out user
-            mAuth.signOut();
-            NavHostFragment.findNavController(NotesListFragment.this)
-                    .navigate(R.id.action_NotesListFragment_to_LoginFragment);
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
-    }
+    // Removed deprecated onCreateOptionsMenu and onOptionsItemSelected methods
+    // Replaced with MenuProvider in onViewCreated
 
     // Inner class for RecyclerView adapter
     private static class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder> {

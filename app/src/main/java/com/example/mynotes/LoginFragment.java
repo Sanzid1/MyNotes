@@ -149,7 +149,9 @@ public class LoginFragment extends Fragment {
                                 .navigate(R.id.action_LoginFragment_to_NotesListFragment);
                     } else {
                         // If sign in fails, display a message to the user.
-                        Toast.makeText(requireContext(), "Authentication failed: " + task.getException().getMessage(),
+                        Exception exception = task.getException();
+                        String errorMessage = exception != null ? exception.getMessage() : "";
+                        Toast.makeText(requireContext(), "Authentication failed: " + errorMessage,
                                 Toast.LENGTH_SHORT).show();
                     }
                 });
@@ -193,13 +195,16 @@ public class LoginFragment extends Fragment {
                                                 .navigate(R.id.action_LoginFragment_to_NotesListFragment);
                                     })
                                     .addOnFailureListener(e -> {
-                                        Toast.makeText(requireContext(), "Error creating user profile: " + e.getMessage(),
+                                        String errorMessage = e.getMessage();
+                                        Toast.makeText(requireContext(), "Error creating user profile: " + (errorMessage != null ? errorMessage : ""),
                                                 Toast.LENGTH_SHORT).show();
                                     });
                         }
                     } else {
                         // If registration fails, display a message to the user.
-                        Toast.makeText(requireContext(), "Registration failed: " + task.getException().getMessage(),
+                        Exception exception = task.getException();
+                        String errorMessage = exception != null ? exception.getMessage() : "";
+                        Toast.makeText(requireContext(), "Registration failed: " + errorMessage,
                                 Toast.LENGTH_SHORT).show();
                     }
                 });

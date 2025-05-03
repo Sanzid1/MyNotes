@@ -11,8 +11,9 @@ import android.view.ViewGroup;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
+import androidx.core.view.MenuProvider;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.Lifecycle;
 import androidx.navigation.fragment.NavHostFragment;
 
 import com.example.mynotes.databinding.FragmentNoteEditorBinding;
@@ -39,12 +40,34 @@ public class NoteEditorFragment extends Fragment {
             Bundle savedInstanceState
     ) {
         binding = FragmentNoteEditorBinding.inflate(inflater, container, false);
-        setHasOptionsMenu(true);
         return binding.getRoot();
     }
 
     public void onViewCreated(@NonNull View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+        
+        // Setup menu provider (replacing deprecated setHasOptionsMenu)
+        requireActivity().addMenuProvider(new MenuProvider() {
+            @Override
+            public void onCreateMenu(@NonNull Menu menu, @NonNull MenuInflater menuInflater) {
+                menuInflater.inflate(R.menu.menu_note_editor, menu);
+                MenuItem deleteItem = menu.findItem(R.id.action_delete);
+                if (deleteItem != null) {
+                    deleteItem.setVisible(!isNewNote);
+                }
+            }
+
+            @Override
+            public boolean onMenuItemSelected(@NonNull MenuItem menuItem) {
+                int id = menuItem.getItemId();
+
+                if (id == R.id.action_delete) {
+                    deleteNote();
+                    return true;
+                }
+                return false;
+            }
+        }, getViewLifecycleOwner(), Lifecycle.State.RESUMED);
 
         // Initialize Firebase
         db = FirebaseFirestore.getInstance();
@@ -84,13 +107,14 @@ public class NoteEditorFragment extends Fragment {
                     }
                 })
                 .addOnFailureListener(e -> {
-                    Toast.makeText(requireContext(), "Error loading note: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    String errorMessage = e.getMessage();
+                    Toast.makeText(requireContext(), "Error loading note: " + (errorMessage != null ? errorMessage : ""), Toast.LENGTH_SHORT).show();
                 });
     }
 
     private void saveNote() {
-        String title = binding.editTextTitle.getText().toString().trim();
-        String content = binding.editTextContent.getText().toString().trim();
+        String title = binding.editTextTitle.getText() != null ? binding.editTextTitle.getText().toString().trim() : "";
+        String content = binding.editTextContent.getText() != null ? binding.editTextContent.getText().toString().trim() : "";
 
         if (TextUtils.isEmpty(title)) {
             binding.editTextTitle.setError("Title is required");
@@ -112,7 +136,8 @@ public class NoteEditorFragment extends Fragment {
                                 .navigate(R.id.action_NoteEditorFragment_to_NotesListFragment);
                     })
                     .addOnFailureListener(e -> {
-                        Toast.makeText(requireContext(), "Error saving note: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        String errorMessage = e.getMessage();
+                        Toast.makeText(requireContext(), "Error saving note: " + (errorMessage != null ? errorMessage : ""), Toast.LENGTH_SHORT).show();
                     });
         } else {
             // Update existing note
@@ -123,32 +148,14 @@ public class NoteEditorFragment extends Fragment {
                                 .navigate(R.id.action_NoteEditorFragment_to_NotesListFragment);
                     })
                     .addOnFailureListener(e -> {
-                        Toast.makeText(requireContext(), "Error updating note: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        String errorMessage = e.getMessage();
+                        Toast.makeText(requireContext(), "Error updating note: " + (errorMessage != null ? errorMessage : ""), Toast.LENGTH_SHORT).show();
                     });
         }
     }
 
-    @Override
-    public void onCreateOptionsMenu(@NonNull Menu menu, @NonNull MenuInflater inflater) {
-        inflater.inflate(R.menu.menu_note_editor, menu);
-        MenuItem deleteItem = menu.findItem(R.id.action_delete);
-        if (deleteItem != null) {
-            deleteItem.setVisible(!isNewNote);
-        }
-        super.onCreateOptionsMenu(menu, inflater);
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        int id = item.getItemId();
-
-        if (id == R.id.action_delete) {
-            deleteNote();
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
-    }
+    // Removed deprecated onCreateOptionsMenu and onOptionsItemSelected methods
+    // Replaced with MenuProvider in onViewCreated
 
     private void deleteNote() {
         if (noteId != null) {
@@ -159,7 +166,8 @@ public class NoteEditorFragment extends Fragment {
                                 .navigate(R.id.action_NoteEditorFragment_to_NotesListFragment);
                     })
                     .addOnFailureListener(e -> {
-                        Toast.makeText(requireContext(), "Error deleting note: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        String errorMessage = e.getMessage();
+                        Toast.makeText(requireContext(), "Error deleting note: " + (errorMessage != null ? errorMessage : ""), Toast.LENGTH_SHORT).show();
                     });
         }
     }
