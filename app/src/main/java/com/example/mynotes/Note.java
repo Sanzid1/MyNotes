@@ -9,7 +9,7 @@ public class Note {
     private String userId;
     private Timestamp timestamp;
 
-    // Required empty constructor for Firestore
+    // Empty constructor required for Firestore
     public Note() {
     }
 
