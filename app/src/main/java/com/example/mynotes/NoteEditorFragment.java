@@ -155,3 +155,17 @@ public class NoteEditorFragment extends Fragment {
             db.collection("notes").document(noteId).delete()
                     .addOnSuccessListener(aVoid -> {
                         Toast.makeText(requireContext(), "Note deleted", Toast.LENGTH_SHORT).show();
+                        NavHostFragment.findNavController(NoteEditorFragment.this)
+                                .navigate(R.id.action_NoteEditorFragment_to_NotesListFragment);
+                    })
+                    .addOnFailureListener(e -> {
+                        Toast.makeText(requireContext(), "Error deleting note: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    });
+        }
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        binding = null;
+    }
