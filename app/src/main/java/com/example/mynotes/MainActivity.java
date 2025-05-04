@@ -1,72 +1,84 @@
 package com.example.mynotes;
 
 import android.os.Bundle;
-
-import com.google.android.material.snackbar.Snackbar;
-
-import androidx.appcompat.app.AppCompatActivity;
-
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
 
 import com.example.mynotes.databinding.ActivityMainBinding;
-import com.google.firebase.FirebaseApp;
-
-import android.view.Menu;
-import android.view.MenuItem;
+import com.google.android.material.snackbar.Snackbar;
+import com.google.firebase.auth.FirebaseAuth;
 
 public class MainActivity extends AppCompatActivity {
 
     private AppBarConfiguration appBarConfiguration;
     private ActivityMainBinding binding;
+    private NavController navController;
+    private FirebaseAuth mAuth;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Initialize Firebase
-        FirebaseApp.initializeApp(this);
-        
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
         setSupportActionBar(binding.toolbar);
 
-        NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_main);
+        navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_main);
         appBarConfiguration = new AppBarConfiguration.Builder(navController.getGraph()).build();
         NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
 
-        binding.fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                // Navigate to NoteEditorFragment with isNewNote=true
-                Bundle args = new Bundle();
-                args.putBoolean("isNewNote", true);
-                navController.navigate(R.id.NoteEditorFragment, args);
+        mAuth = FirebaseAuth.getInstance();
+
+        // Check if user is logged in
+        if (mAuth.getCurrentUser() == null) {
+            // Navigate to login fragment
+            navController.navigate(R.id.LoginFragment);
+        } else {
+            // Navigate to notes list fragment
+            navController.navigate(R.id.NotesListFragment);
+        }
+
+        binding.fab.setOnClickListener(view -> {
+            // Only show FAB in NotesListFragment
+            if (navController.getCurrentDestination().getId() == R.id.NotesListFragment) {
+                navController.navigate(R.id.action_NotesListFragment_to_NoteEditorFragment);
+            }
+        });
+
+        // Hide FAB on fragments where it's not needed
+        navController.addOnDestinationChangedListener((controller, destination, arguments) -> {
+            if (destination.getId() == R.id.NotesListFragment) {
+                binding.fab.setVisibility(View.VISIBLE);
+                binding.fab.setImageResource(android.R.drawable.ic_input_add);
+            } else {
+                binding.fab.setVisibility(View.GONE);
             }
         });
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main, menu);
         return true;
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
 
-        //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
+            return true;
+        } else if (id == R.id.action_logout) {
+            FirebaseAuth.getInstance().signOut();
+            navController.navigate(R.id.LoginFragment);
             return true;
         }
 
