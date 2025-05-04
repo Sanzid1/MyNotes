@@ -1,11 +1,18 @@
 // ... existing code ...
 
 buildscript {
-    // ... existing code ...
+    repositories {
+        google()
+        mavenCentral()
+    }
     dependencies {
-        // ... existing code ...
+        classpath 'com.android.tools.build:gradle:7.4.2'
         classpath 'com.google.gms:google-services:4.4.0'
     }
 }
 
-// ... existing code ...
+// Remove the allprojects block entirely
+
+task clean(type: Delete) {
+    delete rootProject.buildDir
+}
