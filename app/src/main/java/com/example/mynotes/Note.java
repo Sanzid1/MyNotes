@@ -1,25 +1,30 @@
 package com.example.mynotes;
 
 import com.google.firebase.Timestamp;
+import com.google.firebase.firestore.DocumentId;
+
+import java.util.Date;
 
 public class Note {
+    @DocumentId
     private String id;
     private String title;
     private String content;
-    private String userId;
     private Timestamp timestamp;
+    private String userId;
 
-    // Empty constructor required for Firestore
+    // Required empty constructor for Firestore
     public Note() {
     }
 
-    public Note(String title, String content, String userId, Timestamp timestamp) {
+    public Note(String title, String content, String userId) {
         this.title = title;
         this.content = content;
+        this.timestamp = Timestamp.now();
         this.userId = userId;
-        this.timestamp = timestamp;
     }
 
+    // Getters and setters
     public String getId() {
         return id;
     }
@@ -44,6 +49,14 @@ public class Note {
         this.content = content;
     }
 
+    public Timestamp getTimestamp() {
+        return timestamp;
+    }
+
+    public void setTimestamp(Timestamp timestamp) {
+        this.timestamp = timestamp;
+    }
+
     public String getUserId() {
         return userId;
     }
@@ -52,11 +65,7 @@ public class Note {
         this.userId = userId;
     }
 
-    public Timestamp getTimestamp() {
-        return timestamp;
-    }
-
-    public void setTimestamp(Timestamp timestamp) {
-        this.timestamp = timestamp;
+    public Date getDate() {
+        return timestamp != null ? timestamp.toDate() : new Date();
     }
 }
