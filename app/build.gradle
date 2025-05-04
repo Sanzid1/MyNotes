@@ -1,0 +1,15 @@
+// ... existing code ...
+
+dependencies {
+    // ... existing code ...
+    
+    // Firebase dependencies
+    implementation 'com.google.firebase:firebase-auth:22.3.0'
+    implementation 'com.google.firebase:firebase-firestore:24.9.1'
+    implementation 'com.google.firebase:firebase-core:21.1.1'
+    
+    // ... existing code ...
+}
+
+// Add this at the bottom of the file
+apply plugin: 'com.google.gms.google-services'
