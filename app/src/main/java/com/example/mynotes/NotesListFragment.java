@@ -2,11 +2,9 @@ package com.example.mynotes;
 
 import android.os.Bundle;
 import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -15,167 +13,143 @@ import androidx.navigation.fragment.NavHostFragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.mynotes.databinding.FragmentNotesListBinding;
+import com.example.mynotes.databinding.ItemNoteBinding;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public class NotesListFragment extends Fragment {
 
-    private RecyclerView recyclerView;
-    private List<Note> notesList;
+    private FragmentNotesListBinding binding;
     private FirebaseFirestore db;
-    private FirebaseAuth mAuth;
-    private String userId;
+    private FirebaseUser currentUser;
+    private NotesAdapter adapter;
+    private List<Note> notesList = new ArrayList<>();
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        // Inflate a temporary layout (we'll create the real one later)
-        return inflater.inflate(R.layout.fragment_notes_list, container, false);
+        binding = FragmentNotesListBinding.inflate(inflater, container, false);
+        return binding.getRoot();
     }
 
     @Override
     public void onViewCreated(@NonNull View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        // Setup menu provider (replacing deprecated setHasOptionsMenu)
-        requireActivity().addMenuProvider(new androidx.core.view.MenuProvider() {
-            @Override
-            public void onCreateMenu(@NonNull Menu menu, @NonNull MenuInflater menuInflater) {
-                menuInflater.inflate(R.menu.menu_main, menu);
-            }
-
-            @Override
-            public boolean onMenuItemSelected(@NonNull MenuItem menuItem) {
-                int id = menuItem.getItemId();
-
-                if (id == R.id.action_settings) {
-                    // Handle settings action
-                    return true;
-                } else if (id == R.id.action_logout) {
-                    // Sign out user
-                    mAuth.signOut();
-                    NavHostFragment.findNavController(NotesListFragment.this)
-                            .navigate(R.id.action_NotesListFragment_to_LoginFragment);
-                    return true;
-                }
-                return false;
-            }
-        }, getViewLifecycleOwner(), androidx.lifecycle.Lifecycle.State.RESUMED);
 
         // Initialize Firebase
         db = FirebaseFirestore.getInstance();
-        mAuth = FirebaseAuth.getInstance();
+        currentUser = FirebaseAuth.getInstance().getCurrentUser();
 
-        // Check if user is signed in
-        if (mAuth.getCurrentUser() == null) {
-            NavHostFragment.findNavController(NotesListFragment.this)
+        if (currentUser == null) {
+            // User not logged in, navigate to login screen
+            NavHostFragment.findNavController(this)
                     .navigate(R.id.action_NotesListFragment_to_LoginFragment);
             return;
         }
 
-        userId = mAuth.getCurrentUser().getUid();
-
-        // Initialize RecyclerView
-        recyclerView = view.findViewById(R.id.recyclerViewNotes);
-        recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
-        notesList = new ArrayList<>();
-
-        // Create adapter for RecyclerView
-        NoteAdapter adapter = new NoteAdapter(notesList, note -> {
-            // Handle note click - navigate to editor with the note ID
-            Bundle args = new Bundle();
-            args.putBoolean("isNewNote", false);
-            args.putString("noteId", note.getId());
-            NavHostFragment.findNavController(NotesListFragment.this)
-                    .navigate(R.id.action_NotesListFragment_to_NoteEditorFragment, args);
-        });
-
-        recyclerView.setAdapter(adapter);
+        // Setup RecyclerView
+        binding.recyclerViewNotes.setLayoutManager(new LinearLayoutManager(requireContext()));
+        adapter = new NotesAdapter();
+        binding.recyclerViewNotes.setAdapter(adapter);
 
         // Load notes from Firestore
-        loadNotes(adapter);
+        loadNotes();
     }
 
-    private void loadNotes(NoteAdapter adapter) {
+    private void loadNotes() {
         db.collection("notes")
-                .whereEqualTo("userId", userId)
+                .whereEqualTo("userId", currentUser.getUid())
                 .orderBy("timestamp", Query.Direction.DESCENDING)
-                .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    notesList.clear();
-                    for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
-                        Note note = document.toObject(Note.class);
-                        note.setId(document.getId()); // Ensure ID is set
-                        notesList.add(note);
+                .addSnapshotListener((value, error) -> {
+                    if (error != null) {
+                        Toast.makeText(requireContext(), "Error loading notes: " + error.getMessage(), Toast.LENGTH_SHORT).show();
+                        return;
                     }
-                    adapter.notifyDataSetChanged();
-                })
-                .addOnFailureListener(e -> {
-                    String errorMessage = e.getMessage();
-                    Toast.makeText(requireContext(), "Error loading notes: " + (errorMessage != null ? errorMessage : ""), Toast.LENGTH_SHORT).show();
+
+                    notesList.clear();
+                    if (value != null && !value.isEmpty()) {
+                        for (QueryDocumentSnapshot document : value) {
+                            Note note = document.toObject(Note.class);
+                            notesList.add(note);
+                        }
+                        adapter.notifyDataSetChanged();
+                        updateEmptyView();
+                    } else {
+                        updateEmptyView();
+                    }
                 });
     }
 
-    // Removed deprecated onCreateOptionsMenu and onOptionsItemSelected methods
-    // Replaced with MenuProvider in onViewCreated
-
-    // Inner class for RecyclerView adapter
-    private static class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder> {
-
-        private final List<Note> notes;
-        private final OnNoteClickListener listener;
-
-        public interface OnNoteClickListener {
-            void onNoteClick(Note note);
+    private void updateEmptyView() {
+        if (notesList.isEmpty()) {
+            binding.textViewEmpty.setVisibility(View.VISIBLE);
+            binding.recyclerViewNotes.setVisibility(View.GONE);
+        } else {
+            binding.textViewEmpty.setVisibility(View.GONE);
+            binding.recyclerViewNotes.setVisibility(View.VISIBLE);
         }
+    }
 
-        public NoteAdapter(List<Note> notes, OnNoteClickListener listener) {
-            this.notes = notes;
-            this.listener = listener;
-        }
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        binding = null;
+    }
+
+    private class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHolder> {
+
+        private final SimpleDateFormat dateFormat = new SimpleDateFormat("MMM d, yyyy", Locale.getDefault());
 
         @NonNull
         @Override
         public NoteViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-            View view = LayoutInflater.from(parent.getContext())
-                    .inflate(R.layout.item_note, parent, false);
-            return new NoteViewHolder(view);
+            ItemNoteBinding itemBinding = ItemNoteBinding.inflate(
+                    LayoutInflater.from(parent.getContext()), parent, false);
+            return new NoteViewHolder(itemBinding);
         }
 
         @Override
         public void onBindViewHolder(@NonNull NoteViewHolder holder, int position) {
-            Note note = notes.get(position);
-            holder.bind(note, listener);
+            Note note = notesList.get(position);
+            holder.bind(note);
         }
 
         @Override
         public int getItemCount() {
-            return notes.size();
+            return notesList.size();
         }
 
-        static class NoteViewHolder extends RecyclerView.ViewHolder {
-            android.widget.TextView textViewTitle;
-            android.widget.TextView textViewContent;
+        class NoteViewHolder extends RecyclerView.ViewHolder {
+            private final ItemNoteBinding binding;
 
-            public NoteViewHolder(@NonNull View itemView) {
-                super(itemView);
-                textViewTitle = itemView.findViewById(R.id.textViewTitle);
-                textViewContent = itemView.findViewById(R.id.textViewContent);
+            NoteViewHolder(ItemNoteBinding binding) {
+                super(binding.getRoot());
+                this.binding = binding;
+
+                itemView.setOnClickListener(v -> {
+                    int position = getAdapterPosition();
+                    if (position != RecyclerView.NO_POSITION) {
+                        Note note = notesList.get(position);
+                        Bundle bundle = new Bundle();
+                        bundle.putString("noteId", note.getId());
+                        NavHostFragment.findNavController(NotesListFragment.this)
+                                .navigate(R.id.action_NotesListFragment_to_NoteEditorFragment, bundle);
+                    }
+                });
             }
 
-            public void bind(Note note, OnNoteClickListener listener) {
-                textViewTitle.setText(note.getTitle());
-                // Show a preview of the content (first 50 chars)
-                String content = note.getContent();
-                if (content.length() > 50) {
-                    content = content.substring(0, 50) + "...";
-                }
-                textViewContent.setText(content);
-
-                itemView.setOnClickListener(v -> listener.onNoteClick(note));
+            void bind(Note note) {
+                binding.textViewTitle.setText(note.getTitle());
+                binding.textViewContent.setText(note.getContent());
+                binding.textViewTimestamp.setText(dateFormat.format(note.getDate()));
             }
         }
     }
